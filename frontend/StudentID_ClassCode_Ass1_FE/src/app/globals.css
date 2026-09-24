@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #f8fafc; }
+a { transition: color 150ms ease; }
+a:hover { color: #4f46e5; }
