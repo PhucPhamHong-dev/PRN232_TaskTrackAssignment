@@ -11,6 +11,8 @@ TaskTrack is a public task and team management application for PRN232 Assignment
 
 Copy `.env.example` to a private environment file and set the PostgreSQL URL and frontend API URL. Never commit real passwords or tokens.
 
+For local backend development, copy `backend/TaskTrack.API/appsettings.Local.example.json` to `appsettings.Local.json` and replace the placeholder connection string. The local file is ignored by Git.
+
 The backend accepts a PostgreSQL URL through `DATABASE_URL` and converts it for Npgsql. The SQL supplied for the assignment should be run once against a new PostgreSQL database before scaffolding or testing the API.
 
 ## Local commands

@@ -6,6 +6,7 @@ using TaskTrack.Service.Interfaces;
 using TaskTrack.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 var rawConnection = builder.Configuration["DATABASE_URL"] ?? builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(rawConnection)) throw new InvalidOperationException("DATABASE_URL or ConnectionStrings:DefaultConnection must be configured.");
