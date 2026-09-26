@@ -33,7 +33,7 @@ public class TaskTrackRepository(TaskManagementContext db) : ITaskTrackRepositor
     public async Task<Project?> GetProjectAsync(int id, bool includeTasks = false)
     {
         IQueryable<Project> query = db.Projects.Include(x => x.Department);
-        if (includeTasks) query = query.Include(x => x.Tasks.Where(t => t.IsActive)).ThenInclude(x => x.Tags);
+        if (includeTasks) query = query.AsSplitQuery().Include(x => x.Tasks.Where(t => t.IsActive)).ThenInclude(x => x.Tags);
         return await query.FirstOrDefaultAsync(x => x.ProjectId == id && x.IsActive);
     }
 

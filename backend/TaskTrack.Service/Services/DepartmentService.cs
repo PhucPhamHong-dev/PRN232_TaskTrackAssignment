@@ -40,5 +40,5 @@ public class DepartmentService(ITaskTrackRepository repository) : IDepartmentSer
         repository.DeleteDepartment(entity); await repository.SaveChangesAsync();
     }
 
-    private static DepartmentSummaryDto MapSummary(Department x) => new(x.DepartmentId, x.DepartmentName);
+    private static DepartmentSummaryDto MapSummary(Department x) => new(x.DepartmentId, x.DepartmentName, x.DepartmentDescription, x.IsActive);
 }
