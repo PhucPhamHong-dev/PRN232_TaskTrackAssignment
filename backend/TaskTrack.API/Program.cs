@@ -44,6 +44,13 @@ app.UseSwaggerUI();
 app.UseCors("Frontend");
 
 app.MapControllers();
+app.MapGet("/health", async (TaskManagementContext database, CancellationToken cancellationToken) =>
+{
+    var databaseReachable = await database.Database.CanConnectAsync(cancellationToken);
+    return databaseReachable
+        ? Results.Ok(new { status = "healthy", database = "reachable" })
+        : Results.Json(new { status = "unhealthy", database = "unreachable" }, statusCode: StatusCodes.Status503ServiceUnavailable);
+});
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();

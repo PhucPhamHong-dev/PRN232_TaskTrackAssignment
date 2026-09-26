@@ -1,34 +1,97 @@
-name: Build and lint
+name: CI/CD
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: 8.0.x
+  NODE_VERSION: 22
+  FRONTEND_URL: https://qe190133-prn232-ass1-fe.vercel.app
+  BACKEND_URL: https://qe190133-prn232-ass1-be.onrender.com
+  REPOSITORY_URL: https://github.com/PhucPhamHong-dev/PRN232_TaskTrackAssignment
 
 jobs:
   backend:
+    name: Backend build and Docker validation
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
-      - run: dotnet restore backend/StudentID_ClassCode_Ass1_BE.sln
-      - run: dotnet build backend/StudentID_ClassCode_Ass1_BE.sln --configuration Release --no-restore
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore backend/StudentID_ClassCode_Ass1_BE.sln
+
+      - name: Build release
+        run: dotnet build backend/StudentID_ClassCode_Ass1_BE.sln --configuration Release --no-restore
+
+      - name: Publish API
+        run: dotnet publish backend/TaskTrack.API/TaskTrack.API.csproj --configuration Release --no-restore --output artifacts/backend
+
+      - name: Build production Docker image
+        run: docker build --tag tasktrack-api:${{ github.sha }} backend
 
   frontend:
+    name: Frontend lint and build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend/StudentID_ClassCode_Ass1_FE
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/StudentID_ClassCode_Ass1_FE/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build production frontend
+        run: npm run build
+
+  production-smoke-test:
+    name: Verify the four submission links
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ env.FRONTEND_URL }}
+    steps:
+      - name: Checkout smoke-test script
+        uses: actions/checkout@v4
+
+      - name: Wait for Vercel and Render auto-deployments
+        run: sleep 45
+
+      - name: Check repository, frontend, backend, and Swagger
+        env:
+          SWAGGER_URL: ${{ env.BACKEND_URL }}/swagger
+          HEALTH_URL: ${{ env.BACKEND_URL }}/health
+        run: bash .github/scripts/smoke-test.sh
