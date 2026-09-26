@@ -7,7 +7,14 @@ export type ProjectInput = { projectName: string; description?: string; startDat
 export type TaskInput = { title: string; description?: string; status: number; priority: number; dueDate?: string | null; projectId: number; tagIds: number[] };
 export type TagInput = { tagName: string; color?: string | null };
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const DEFAULT_API_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://qe190133-prn232-ass1-be.onrender.com"
+    : "http://localhost:5000";
+
+// Use a project-specific variable so an older Vercel variable cannot point this
+// deployment back to the previous Render service.
+const API_URL = (process.env.NEXT_PUBLIC_QE190133_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers || {}) } });
