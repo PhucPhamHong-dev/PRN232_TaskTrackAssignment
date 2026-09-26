@@ -4,8 +4,9 @@ TaskTrack is a public task and team management application built with ASP.NET Co
 
 ## Live application
 
-- Frontend: [https://prn-232-task-track-assignment.vercel.app](https://prn-232-task-track-assignment.vercel.app)
-- Backend Swagger: [https://prn232-tasktrack-api.onrender.com/swagger](https://prn232-tasktrack-api.onrender.com/swagger)
+- Frontend: [https://qe190133-prn232-ass1-fe.vercel.app](https://qe190133-prn232-ass1-fe.vercel.app)
+- Backend API: [https://qe190133-prn232-ass1-be.onrender.com](https://qe190133-prn232-ass1-be.onrender.com)
+- Backend Swagger: [https://qe190133-prn232-ass1-be.onrender.com/swagger](https://qe190133-prn232-ass1-be.onrender.com/swagger)
 - Source repository: [PhucPhamHong-dev/PRN232_TaskTrackAssignment](https://github.com/PhucPhamHong-dev/PRN232_TaskTrackAssignment)
 
 ## Features
@@ -122,7 +123,7 @@ The frontend runs at `http://localhost:3000`. Swagger uses the backend URL follo
 | Backend | `DATABASE_URL` | PostgreSQL URL supplied by the hosting provider |
 | Backend | `ASPNETCORE_ENVIRONMENT` | `Production` on Render |
 | Backend | `FRONTEND_URL` | Exact Vercel origin allowed by CORS |
-| Frontend | `NEXT_PUBLIC_API_URL` | Public Render backend URL, without a trailing slash |
+| Frontend | `NEXT_PUBLIC_QE190133_API_URL` | Optional public Render backend URL override, without a trailing slash |
 
 Never commit passwords or production connection strings. See `.env.example` for placeholders.
 
