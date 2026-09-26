@@ -2,6 +2,12 @@
 
 TaskTrack is a public task and team management application built with ASP.NET Core 8, PostgreSQL, Entity Framework Core Database-First, Next.js App Router, TypeScript, and Tailwind CSS.
 
+## Live application
+
+- Frontend: [https://prn-232-task-track-assignment.vercel.app](https://prn-232-task-track-assignment.vercel.app)
+- Backend Swagger: [https://prn232-tasktrack-api.onrender.com/swagger](https://prn232-tasktrack-api.onrender.com/swagger)
+- Source repository: [PhucPhamHong-dev/PRN232_TaskTrackAssignment](https://github.com/PhucPhamHong-dev/PRN232_TaskTrackAssignment)
+
 ## Features
 
 - Public dashboard with live department, project, and task totals.
