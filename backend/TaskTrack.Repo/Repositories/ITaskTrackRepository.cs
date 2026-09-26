@@ -1,4 +1,9 @@
-using TaskTrack.Repo.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Department = TaskTrack.Repo.Models.Department;
+using Project = TaskTrack.Repo.Models.Project;
+using Tag = TaskTrack.Repo.Models.Tag;
+using WorkTask = TaskTrack.Repo.Models.Task;
 
 namespace TaskTrack.Repo.Repositories;
 

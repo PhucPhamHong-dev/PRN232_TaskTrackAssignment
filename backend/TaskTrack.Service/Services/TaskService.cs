@@ -1,8 +1,9 @@
-using TaskTrack.Repo.Models;
 using TaskTrack.Repo.Repositories;
 using TaskTrack.Service.Dtos;
 using TaskTrack.Service.Exceptions;
 using TaskTrack.Service.Interfaces;
+using Tag = TaskTrack.Repo.Models.Tag;
+using WorkTask = TaskTrack.Repo.Models.Task;
 
 namespace TaskTrack.Service.Services;
 
@@ -23,7 +24,7 @@ public class TaskService(ITaskTrackRepository repository) : ITaskService
     {
         if (!await repository.ProjectExistsAsync(request.ProjectId)) throw new ServiceException("ProjectId does not reference an active project.", 400, new Dictionary<string, string[]> { ["projectId"] = ["The selected project does not exist."] });
         var tags = await ValidateTags(request.TagIds);
-        var entity = new WorkTask { Title = request.Title.Trim(), Description = request.Description?.Trim(), Status = request.Status, Priority = request.Priority, DueDate = request.DueDate, ProjectId = request.ProjectId, IsActive = true, CreatedDate = DateTime.UtcNow };
+        var entity = new WorkTask { Title = request.Title.Trim(), Description = request.Description?.Trim(), Status = request.Status, Priority = request.Priority, DueDate = request.DueDate, ProjectId = request.ProjectId, IsActive = true, CreatedDate = DatabaseNow() };
         await repository.AddTaskAsync(entity); await repository.SaveChangesAsync();
         if (tags.Count > 0) { await repository.ReplaceTaskTagsAsync(entity, tags.Select(x => x.TagId)); await repository.SaveChangesAsync(); }
         return Map(await repository.GetTaskAsync(entity.TaskId, true) ?? entity);
@@ -34,7 +35,7 @@ public class TaskService(ITaskTrackRepository repository) : ITaskService
         var entity = await repository.GetTaskAsync(id, true) ?? throw new ServiceException("Task not found.", 404);
         if (!await repository.ProjectExistsAsync(request.ProjectId)) throw new ServiceException("ProjectId does not reference an active project.");
         var tags = await ValidateTags(request.TagIds);
-        entity.Title = request.Title.Trim(); entity.Description = request.Description?.Trim(); entity.Status = request.Status; entity.Priority = request.Priority; entity.DueDate = request.DueDate; entity.ProjectId = request.ProjectId; entity.ModifiedDate = DateTime.UtcNow;
+        entity.Title = request.Title.Trim(); entity.Description = request.Description?.Trim(); entity.Status = request.Status; entity.Priority = request.Priority; entity.DueDate = request.DueDate; entity.ProjectId = request.ProjectId; entity.ModifiedDate = DatabaseNow();
         repository.UpdateTask(entity); await repository.ReplaceTaskTagsAsync(entity, tags.Select(x => x.TagId)); await repository.SaveChangesAsync();
         return Map(await repository.GetTaskAsync(id, true) ?? entity);
     }
@@ -53,5 +54,7 @@ public class TaskService(ITaskTrackRepository repository) : ITaskService
         return tags;
     }
 
-    public static TaskDto Map(WorkTask x) => new(x.TaskId, x.Title, x.Description, x.Status, x.Priority, x.DueDate, x.ProjectId, x.Project?.ProjectName ?? string.Empty, x.IsActive, x.CreatedDate, x.ModifiedDate, x.TaskTags?.Select(tt => new TagDto(tt.TagId, tt.Tag.TagName, tt.Tag.Color)).ToList() ?? []);
+    private static DateTime DatabaseNow() => DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+
+    public static TaskDto Map(WorkTask x) => new(x.TaskId, x.Title, x.Description, x.Status, x.Priority, x.DueDate, x.ProjectId, x.Project?.ProjectName ?? string.Empty, x.IsActive, x.CreatedDate, x.ModifiedDate, x.Tags?.Select(tag => new TagDto(tag.TagId, tag.TagName, tag.Color)).ToList() ?? []);
 }

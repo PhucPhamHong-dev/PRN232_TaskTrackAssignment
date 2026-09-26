@@ -1,4 +1,4 @@
-using TaskTrack.Repo.Models;
+using Project = TaskTrack.Repo.Models.Project;
 using TaskTrack.Repo.Repositories;
 using TaskTrack.Service.Dtos;
 using TaskTrack.Service.Exceptions;
@@ -28,7 +28,7 @@ public class ProjectService(ITaskTrackRepository repository) : IProjectService
     {
         if (!await repository.DepartmentExistsAsync(request.DepartmentId)) throw new ServiceException("DepartmentId does not reference an active department.", 400, new Dictionary<string, string[]> { ["departmentId"] = ["The selected department does not exist."] });
         ValidateDates(request.StartDate, request.EndDate);
-        var entity = new Project { ProjectName = request.ProjectName.Trim(), Description = request.Description?.Trim(), StartDate = request.StartDate!.Value, EndDate = request.EndDate, Status = request.Status, DepartmentId = request.DepartmentId, IsActive = true, CreatedDate = DateTime.UtcNow };
+        var entity = new Project { ProjectName = request.ProjectName.Trim(), Description = request.Description?.Trim(), StartDate = request.StartDate!.Value, EndDate = request.EndDate, Status = request.Status, DepartmentId = request.DepartmentId, IsActive = true, CreatedDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified) };
         await repository.AddProjectAsync(entity); await repository.SaveChangesAsync();
         var saved = await repository.GetProjectAsync(entity.ProjectId) ?? entity;
         return MapSummary(saved);

@@ -1,4 +1,4 @@
-using TaskTrack.Repo.Models;
+using Tag = TaskTrack.Repo.Models.Tag;
 using TaskTrack.Repo.Repositories;
 using TaskTrack.Service.Dtos;
 using TaskTrack.Service.Exceptions;

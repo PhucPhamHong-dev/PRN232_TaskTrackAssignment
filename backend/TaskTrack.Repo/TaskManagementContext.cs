@@ -1,79 +1,135 @@
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using TaskTrack.Repo.Models;
 
 namespace TaskTrack.Repo;
 
-public class TaskManagementContext(DbContextOptions<TaskManagementContext> options) : DbContext(options)
+public partial class TaskManagementContext : DbContext
 {
-    public DbSet<Department> Departments => Set<Department>();
-    public DbSet<Project> Projects => Set<Project>();
-    public DbSet<WorkTask> Tasks => Set<WorkTask>();
-    public DbSet<Tag> Tags => Set<Tag>();
-    public DbSet<TaskTag> TaskTags => Set<TaskTag>();
+    public TaskManagementContext(DbContextOptions<TaskManagementContext> options)
+        : base(options)
+    {
+    }
+
+    public virtual DbSet<Department> Departments { get; set; }
+
+    public virtual DbSet<Project> Projects { get; set; }
+
+    public virtual DbSet<Tag> Tags { get; set; }
+
+    public virtual DbSet<Task> Tasks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder
+            .HasPostgresEnum("auth", "aal_level", new[] { "aal1", "aal2", "aal3" })
+            .HasPostgresEnum("auth", "code_challenge_method", new[] { "s256", "plain" })
+            .HasPostgresEnum("auth", "factor_status", new[] { "unverified", "verified" })
+            .HasPostgresEnum("auth", "factor_type", new[] { "totp", "webauthn", "phone", "recovery_code" })
+            .HasPostgresEnum("auth", "oauth_authorization_status", new[] { "pending", "approved", "denied", "expired" })
+            .HasPostgresEnum("auth", "oauth_client_type", new[] { "public", "confidential" })
+            .HasPostgresEnum("auth", "oauth_registration_type", new[] { "dynamic", "manual" })
+            .HasPostgresEnum("auth", "oauth_response_type", new[] { "code" })
+            .HasPostgresEnum("auth", "one_time_token_type", new[] { "confirmation_token", "reauthentication_token", "recovery_token", "email_change_token_new", "email_change_token_current", "phone_change_token" })
+            .HasPostgresEnum("realtime", "action", new[] { "INSERT", "UPDATE", "DELETE", "TRUNCATE", "ERROR" })
+            .HasPostgresEnum("realtime", "equality_op", new[] { "eq", "neq", "lt", "lte", "gt", "gte", "in", "like", "ilike", "is", "match", "imatch", "isdistinct" })
+            .HasPostgresEnum("storage", "buckettype", new[] { "STANDARD", "ANALYTICS", "VECTOR" })
+            .HasPostgresExtension("extensions", "pg_stat_statements")
+            .HasPostgresExtension("extensions", "pgcrypto")
+            .HasPostgresExtension("extensions", "uuid-ossp")
+            .HasPostgresExtension("vault", "supabase_vault");
+
         modelBuilder.Entity<Department>(entity =>
         {
+            entity.HasKey(e => e.DepartmentId).HasName("Department_pkey");
+
             entity.ToTable("Department");
-            entity.HasKey(x => x.DepartmentId);
-            entity.Property(x => x.DepartmentId).HasColumnName("DepartmentID");
-            entity.Property(x => x.DepartmentName).HasColumnName("DepartmentName").HasMaxLength(100).IsRequired();
-            entity.Property(x => x.DepartmentDescription).HasColumnName("DepartmentDescription").HasMaxLength(300).IsRequired();
-            entity.Property(x => x.IsActive).HasColumnName("IsActive");
+
+            entity.Property(e => e.DepartmentId).HasColumnName("DepartmentID");
+            entity.Property(e => e.DepartmentDescription).HasMaxLength(300);
+            entity.Property(e => e.DepartmentName).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
         });
 
         modelBuilder.Entity<Project>(entity =>
         {
-            entity.ToTable("Project");
-            entity.HasKey(x => x.ProjectId);
-            entity.Property(x => x.ProjectId).HasColumnName("ProjectID");
-            entity.Property(x => x.ProjectName).HasColumnName("ProjectName").HasMaxLength(200).IsRequired();
-            entity.Property(x => x.Description).HasColumnName("Description");
-            entity.Property(x => x.StartDate).HasColumnName("StartDate");
-            entity.Property(x => x.EndDate).HasColumnName("EndDate");
-            entity.Property(x => x.Status).HasColumnName("Status");
-            entity.Property(x => x.DepartmentId).HasColumnName("DepartmentID");
-            entity.Property(x => x.IsActive).HasColumnName("IsActive");
-            entity.Property(x => x.CreatedDate).HasColumnName("CreatedDate");
-            entity.HasOne(x => x.Department).WithMany(x => x.Projects).HasForeignKey(x => x.DepartmentId);
-        });
+            entity.HasKey(e => e.ProjectId).HasName("Project_pkey");
 
-        modelBuilder.Entity<WorkTask>(entity =>
-        {
-            entity.ToTable("Task");
-            entity.HasKey(x => x.TaskId);
-            entity.Property(x => x.TaskId).HasColumnName("TaskID");
-            entity.Property(x => x.Title).HasColumnName("Title").HasMaxLength(300).IsRequired();
-            entity.Property(x => x.Description).HasColumnName("Description");
-            entity.Property(x => x.Status).HasColumnName("Status");
-            entity.Property(x => x.Priority).HasColumnName("Priority");
-            entity.Property(x => x.DueDate).HasColumnName("DueDate");
-            entity.Property(x => x.ProjectId).HasColumnName("ProjectID");
-            entity.Property(x => x.IsActive).HasColumnName("IsActive");
-            entity.Property(x => x.CreatedDate).HasColumnName("CreatedDate");
-            entity.Property(x => x.ModifiedDate).HasColumnName("ModifiedDate");
-            entity.HasOne(x => x.Project).WithMany(x => x.Tasks).HasForeignKey(x => x.ProjectId);
+            entity.ToTable("Project");
+
+            entity.Property(e => e.ProjectId).HasColumnName("ProjectID");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone");
+            entity.Property(e => e.DepartmentId).HasColumnName("DepartmentID");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.ProjectName).HasMaxLength(200);
+            entity.Property(e => e.Status).HasDefaultValue((short)0);
+
+            entity.HasOne(d => d.Department).WithMany(p => p.Projects)
+                .HasForeignKey(d => d.DepartmentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Project_Department");
         });
 
         modelBuilder.Entity<Tag>(entity =>
         {
+            entity.HasKey(e => e.TagId).HasName("Tag_pkey");
+
             entity.ToTable("Tag");
-            entity.HasKey(x => x.TagId);
-            entity.Property(x => x.TagId).HasColumnName("TagID");
-            entity.Property(x => x.TagName).HasColumnName("TagName").HasMaxLength(50).IsRequired();
-            entity.Property(x => x.Color).HasColumnName("Color").HasMaxLength(7);
-            entity.HasIndex(x => x.TagName).IsUnique();
+
+            entity.HasIndex(e => e.TagName, "Tag_TagName_key").IsUnique();
+
+            entity.Property(e => e.TagId).HasColumnName("TagID");
+            entity.Property(e => e.Color).HasMaxLength(7);
+            entity.Property(e => e.TagName).HasMaxLength(50);
         });
 
-        modelBuilder.Entity<TaskTag>(entity =>
+        modelBuilder.Entity<Task>(entity =>
         {
-            entity.ToTable("TaskTag");
-            entity.HasKey(x => new { x.TaskId, x.TagId });
-            entity.Property(x => x.TaskId).HasColumnName("TaskID");
-            entity.Property(x => x.TagId).HasColumnName("TagID");
-            entity.HasOne(x => x.Task).WithMany(x => x.TaskTags).HasForeignKey(x => x.TaskId);
-            entity.HasOne(x => x.Tag).WithMany(x => x.TaskTags).HasForeignKey(x => x.TagId);
+            entity.HasKey(e => e.TaskId).HasName("Task_pkey");
+
+            entity.ToTable("Task");
+
+            entity.Property(e => e.TaskId).HasColumnName("TaskID");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.ModifiedDate).HasColumnType("timestamp without time zone");
+            entity.Property(e => e.Priority).HasDefaultValue((short)1);
+            entity.Property(e => e.ProjectId).HasColumnName("ProjectID");
+            entity.Property(e => e.Status).HasDefaultValue((short)0);
+            entity.Property(e => e.Title).HasMaxLength(300);
+
+            entity.HasOne(d => d.Project).WithMany(p => p.Tasks)
+                .HasForeignKey(d => d.ProjectId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Task_Project");
+
+            entity.HasMany(d => d.Tags).WithMany(p => p.Tasks)
+                .UsingEntity<Dictionary<string, object>>(
+                    "TaskTag",
+                    r => r.HasOne<Tag>().WithMany()
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK_TaskTag_Tag"),
+                    l => l.HasOne<Task>().WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK_TaskTag_Task"),
+                    j =>
+                    {
+                        j.HasKey("TaskId", "TagId");
+                        j.ToTable("TaskTag");
+                        j.IndexerProperty<int>("TaskId").HasColumnName("TaskID");
+                        j.IndexerProperty<int>("TagId").HasColumnName("TagID");
+                    });
         });
+
+        OnModelCreatingPartial(modelBuilder);
     }
+
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
