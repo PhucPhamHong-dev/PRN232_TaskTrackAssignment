@@ -1,36 +1,152 @@
-# PRN232 TaskTrack Assignment
+# PRN232 TaskTrack Assignment 1
 
-TaskTrack is a public task and team management application for PRN232 Assignment 1.
+TaskTrack is a public task and team management application built with ASP.NET Core 8, PostgreSQL, Entity Framework Core Database-First, Next.js App Router, TypeScript, and Tailwind CSS.
+
+## Features
+
+- Public dashboard with live department, project, and task totals.
+- Department, project, task, and tag CRUD without authentication.
+- Department and project details with related data.
+- Task search by title, status, priority, project, and tag.
+- Status and priority badges, modal forms, delete confirmations, validation, loading states, error states, and toast notifications.
+- Soft-delete for tasks and relationship checks before deleting departments, projects, or tags.
+- Swagger API documentation and GitHub Actions build/lint checks.
+- Responsive layouts for desktop and mobile.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI[Next.js frontend] -->|REST / JSON| API[TaskTrack.API]
+    API --> Service[TaskTrack.Service]
+    Service --> Repo[TaskTrack.Repo]
+    Repo --> EF[EF Core Database-First]
+    EF --> DB[(PostgreSQL)]
+```
+
+The backend follows the required layered design. Controllers only call services; services contain validation and business rules; all database access is isolated in the repository project.
+
+## Database ERD
+
+```mermaid
+erDiagram
+    Department ||--o{ Project : has
+    Project ||--o{ Task : has
+    Task ||--o{ TaskTag : uses
+    Tag ||--o{ TaskTag : assigned
+
+    Department {
+        int DepartmentID PK
+        string DepartmentName
+        string DepartmentDescription
+        bool IsActive
+    }
+    Project {
+        int ProjectID PK
+        int DepartmentID FK
+        string ProjectName
+        date StartDate
+        date EndDate
+        smallint Status
+        bool IsActive
+    }
+    Task {
+        int TaskID PK
+        int ProjectID FK
+        string Title
+        smallint Status
+        smallint Priority
+        date DueDate
+        bool IsActive
+    }
+    Tag {
+        int TagID PK
+        string TagName
+        string Color
+    }
+    TaskTag {
+        int TaskID PK,FK
+        int TagID PK,FK
+    }
+```
 
 ## Repository structure
 
-- `backend/` — ASP.NET Core .NET 8 Web API split into API, Service, and Repository projects.
-- `frontend/` — Next.js App Router application using TypeScript and Tailwind CSS.
+- `backend/TaskTrack.API` — controllers, middleware, Swagger, CORS, and application startup.
+- `backend/TaskTrack.Service` — DTOs, service interfaces, validation, and business logic.
+- `backend/TaskTrack.Repo` — scaffolded EF Core entities, DbContext, and repository implementation.
+- `frontend/StudentID_ClassCode_Ass1_FE` — Next.js public and management pages.
+- `.github/workflows/ci.yml` — backend build and frontend lint/build verification.
 
-## Configuration
+## Local setup
 
-Copy `.env.example` to a private environment file and set the PostgreSQL URL and frontend API URL. Never commit real passwords or tokens.
+Requirements: .NET 8 SDK, Node.js 22 or later, and a PostgreSQL database initialized with the supplied `TaskManagementDB_Postgres.sql` file.
 
-For local backend development, copy `backend/TaskTrack.API/appsettings.Local.example.json` to `appsettings.Local.json` and replace the placeholder connection string. The local file is ignored by Git.
+1. Clone the repository.
+2. Run the supplied SQL script against PostgreSQL without changing its schema.
+3. Copy `backend/TaskTrack.API/appsettings.Local.example.json` to `backend/TaskTrack.API/appsettings.Local.json` and enter the PostgreSQL connection string. This private file is ignored by Git.
+4. Start the backend:
 
-The backend accepts a PostgreSQL URL through `DATABASE_URL` and converts it for Npgsql. The SQL supplied for the assignment should be run once against a new PostgreSQL database before scaffolding or testing the API.
+   ```bash
+   cd backend
+   dotnet restore StudentID_ClassCode_Ass1_BE.sln
+   dotnet run --project TaskTrack.API
+   ```
 
-## Local commands
+5. Create `frontend/StudentID_ClassCode_Ass1_FE/.env.local`:
 
-Backend:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:5187
+   ```
 
-```bash
-cd backend
-dotnet build StudentID_ClassCode_Ass1_BE.sln
-dotnet run --project TaskTrack.API
-```
+6. Start the frontend:
 
-Frontend:
+   ```bash
+   cd frontend/StudentID_ClassCode_Ass1_FE
+   npm install
+   npm run dev
+   ```
 
-```bash
-cd frontend/StudentID_ClassCode_Ass1_FE
-npm install
-npm run dev
-```
+The frontend runs at `http://localhost:3000`. Swagger uses the backend URL followed by `/swagger`.
 
-Swagger is available at the backend URL followed by `/swagger`.
+## Environment variables
+
+| Application | Variable | Example / purpose |
+| --- | --- | --- |
+| Backend | `DATABASE_URL` | PostgreSQL URL supplied by the hosting provider |
+| Backend | `ASPNETCORE_ENVIRONMENT` | `Production` on Render |
+| Backend | `FRONTEND_URL` | Exact Vercel origin allowed by CORS |
+| Frontend | `NEXT_PUBLIC_API_URL` | Public Render backend URL, without a trailing slash |
+
+Never commit passwords or production connection strings. See `.env.example` for placeholders.
+
+## Deploy backend to Render
+
+1. Push the backend code to a public GitHub repository.
+2. Create a Render **Web Service** from that repository.
+3. Choose **Docker** as the runtime. If using this monorepo, set the root directory to `backend`.
+4. Set `DATABASE_URL`, `ASPNETCORE_ENVIRONMENT=Production`, and `FRONTEND_URL` in Render.
+5. Deploy and verify `https://YOUR-SERVICE.onrender.com/swagger`.
+
+The included `backend/Dockerfile` listens on Render's assigned `PORT` and publishes the .NET 8 API.
+
+## Deploy frontend to Vercel
+
+1. Push the frontend code to its separate public GitHub repository, as required by the assignment.
+2. Import the repository into Vercel and set the project root to `frontend/StudentID_ClassCode_Ass1_FE` only if deploying from this monorepo.
+3. Add `NEXT_PUBLIC_API_URL=https://YOUR-SERVICE.onrender.com`.
+4. Deploy, copy the final Vercel URL into the backend's `FRONTEND_URL`, and redeploy the backend if needed.
+5. Verify every public and management route against real PostgreSQL data.
+
+## Main routes
+
+| Public pages | Management pages |
+| --- | --- |
+| `/` | `/departments/manage` |
+| `/departments` | `/projects/manage` |
+| `/departments/[id]` | `/tasks/manage` |
+| `/projects/[id]` | `/tags/manage` |
+| `/tasks/[id]` |  |
+| `/search` |  |
+
+The API exposes all 24 endpoints specified for departments, projects, tasks, and tags under `/api`.

@@ -8,6 +8,9 @@ using TaskTrack.Service.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
+var renderPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(renderPort)) builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+
 var rawConnection = builder.Configuration["DATABASE_URL"] ?? builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(rawConnection)) throw new InvalidOperationException("DATABASE_URL or ConnectionStrings:DefaultConnection must be configured.");
 
@@ -17,7 +20,14 @@ builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<ITagService, TagService>();
-builder.Services.AddCors(options => options.AddPolicy("Frontend", policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList() ?? [];
+var deployedFrontend = builder.Configuration["FRONTEND_URL"];
+if (!string.IsNullOrWhiteSpace(deployedFrontend)) configuredOrigins.Add(deployedFrontend.TrimEnd('/'));
+builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
+{
+    if (configuredOrigins.Count == 0) policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    else policy.WithOrigins(configuredOrigins.Distinct().ToArray()).AllowAnyHeader().AllowAnyMethod();
+}));
 
 // Add services to the container.
 
@@ -34,6 +44,7 @@ app.UseSwaggerUI();
 app.UseCors("Frontend");
 
 app.MapControllers();
+app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();
 

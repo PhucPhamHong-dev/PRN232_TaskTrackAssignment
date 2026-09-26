@@ -1,0 +1,5 @@
+**/bin
+**/obj
+**/.vs
+**/*.user
+TaskTrack.API/appsettings.Local.json
