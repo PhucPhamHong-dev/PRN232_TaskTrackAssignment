@@ -28,10 +28,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -56,10 +56,10 @@ jobs:
         working-directory: frontend/StudentID_ClassCode_Ass1_FE
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -85,7 +85,7 @@ jobs:
       url: ${{ env.FRONTEND_URL }}
     steps:
       - name: Checkout smoke-test script
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Wait for Vercel and Render auto-deployments
         run: sleep 45
